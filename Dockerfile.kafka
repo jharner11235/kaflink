@@ -1,0 +1,28 @@
+FROM openjdk:11-jre-slim
+
+ARG KAFKA_VERSION=3.6.1
+ARG SCALA_VERSION=2.13
+
+# update, get tools, get python
+RUN apt-get update && \
+    apt-get install -y wget python3 python3-pip python3-dev && \
+    rm -rf /var/lib/apt/lists/*
+RUN ln -s /usr/bin/python3 /usr/bin/python
+
+# get kafka, untar it into folder kafka
+RUN mkdir kafka; \
+    wget -O kafka.tgz http://ftp.heanet.ie/mirrors/www.apache.org/dist/kafka/$KAFKA_VERSION/kafka_$SCALA_VERSION-$KAFKA_VERSION.tgz; \
+    tar xf kafka.tgz -C /kafka --strip-components 1; \
+    rm kafka.tgz
+
+# add kafka settings
+RUN cd /kafka; \
+    echo "listeners=EXTERNAL://0.0.0.0:19092,INTERNAL://0.0.0.0:9092" >> config/server.properties; \
+    echo "listener.security.protocol.map=INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT" >> config/server.properties; \
+    echo "advertised.listeners=INTERNAL://kafka:9092,EXTERNAL://localhost:19092" >> config/server.properties; \
+    echo "inter.broker.listener.name=INTERNAL" >> config/server.properties; \
+    sed -i "s|zookeeper.connect=localhost:2181|zookeeper.connect=zookeeper:2181 |g" config/server.properties
+
+RUN set -ex; \
+  python -m pip install --upgrade pip; \
+  pip3 install Faker==22.5.1 kafka-python==2.0.2 pandas==2.2.0

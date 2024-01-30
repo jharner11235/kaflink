@@ -1,0 +1,52 @@
+version: '2'
+services:
+  zookeeper:
+    build:
+      context: .
+      dockerfile: Dockerfile.kafka
+    command: kafka/bin/zookeeper-server-start.sh kafka/config/zookeeper.properties
+    ports:
+      - 2181:2181
+
+  kafka:
+    build:
+      context: .
+      dockerfile: Dockerfile.kafka
+    volumes:
+      - ./scripts:/scripts
+    command: kafka/bin/kafka-server-start.sh kafka/config/server.properties
+    depends_on:
+      - zookeeper
+    ports:
+      - 19092:19092
+
+  jobmanager:
+    build:
+      context: .
+      dockerfile: Dockerfile.flink
+    volumes:
+      - ./scripts:/opt/scripts
+    ports:
+      - "8081:8081"
+    command: jobmanager
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager        
+
+  taskmanager:
+    build:
+      context: .
+      dockerfile: Dockerfile.flink
+    volumes:
+      - ./scripts:/opt/scripts
+      - ./data:/opt/data
+    depends_on:
+      - jobmanager
+    command: taskmanager
+    scale: 1
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        taskmanager.numberOfTaskSlots: 2

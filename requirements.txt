@@ -1,0 +1,4 @@
+Faker==22.5.1
+kafka-python==2.0.2
+pandas==2.2.0
+apache-flink==1.18.1

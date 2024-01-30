@@ -1,0 +1,23 @@
+ARG FLINK_VERSION=1.18.1
+FROM flink:${FLINK_VERSION}-java11
+
+ARG FLINK_VERSION
+
+# install python3 and pip3... for some reason we need to re-install java 11 as well.
+RUN apt-get update -y && \
+    apt-get install -y python3 python3-pip python3-dev openjdk-11-jdk && \
+    rm -rf /var/lib/apt/lists/*
+RUN ln -s /usr/bin/python3 /usr/bin/python
+
+# reset ENV vars
+ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-arm64
+
+# get kafka connector 
+RUN wget -P /opt/flink/lib/ https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-kafka/3.0.2-1.18/flink-sql-connector-kafka-3.0.2-1.18.jar; \
+    mkdir -p /opt/data; \
+    chmod 777 /opt/data
+
+# install PyFlink
+RUN pip3 install apache-flink==${FLINK_VERSION}
+
+WORKDIR /opt/flink/
